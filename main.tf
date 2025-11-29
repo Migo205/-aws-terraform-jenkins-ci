@@ -32,7 +32,7 @@ data "aws_ami" "ubuntu" {
 # Create the EC2 Instance 
 
 resource "aws_instance" "jenkins_instance" {
-  instance_type = "var.instance_type"
+  instance_type =  var.instance_type
   ami = data.aws_ami.ubuntu.id
   subnet_id = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
