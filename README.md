@@ -1,86 +1,83 @@
-# AWS Jenkins CI/CD Server Deployment (Infrastructure as Code)
+# AWS Jenkins CI/CD Server Deployment (Terraform IaC)
 
-## 1. Project Overview and Methodology
+## 1. Project Overview
 
-This repository provides the **Terraform** configuration for deploying a robust and secure **Jenkins CI/CD Server** on **Amazon Web Services (AWS)**. This solution demonstrates key **DevOps** practices by treating infrastructure as code (IaC), ensuring automated, repeatable, and consistent deployment.
+This project provides a comprehensive **Infrastructure as Code (IaC)** solution using **Terraform** to provision a secure and fully functional **Jenkins CI/CD Server** on **Amazon Web Services (AWS)**.
 
-### Key Technologies Utilized:
+The solution ensures a clean, repeatable, and scalable deployment workflow by adhering to best practices:
 
-* **Cloud Platform:** AWS
-* **Provisioning Tool:** Terraform (Infrastructure as Code)
-* **Application:** Jenkins CI/CD Server
-* **OS/Bootstrap:** Ubuntu Linux & Custom Bash Scripting (`user_data`)
-
----
-
-## 2. Infrastructure Architecture
-
-The deployment creates a dedicated and secure network environment for the Jenkins server:
-
-* **Network Isolation:** A custom **VPC** and a **Public Subnet** for isolation.
-* **Security Posture:** A tightly configured **Security Group** restricting access to only essential ports (22, 8080).
-* **Compute:** A dedicated **EC2 Instance** hosts the Jenkins application.
-* **Stable Access:** An **Elastic IP (EIP)** is associated with the instance, providing a permanent, stable public endpoint.
+* **Code Organization:** Resources are split into dedicated files (`network.tf`, `security.tf`, etc.).
+* **Parameterization:** All changeable values are managed via **`variables.tf`**.
+* **Verification:** Key deployment information is exposed via **`outputs.tf`**.
 
 ---
 
-## 3. Live Deployment Details (Verification)
+## 2. Solution Architecture
 
-The following parameters are the concrete outputs from the successful Terraform execution. Use these details for accessing and managing the provisioned resources:
+The Terraform configuration provisions the following managed AWS resources:
 
-### Jenkins Access Endpoint
-
-* **Public URL:** `http://98.95.246.89:8080`
-* **Associated Elastic IP:** `98.95.246.89`
-
-### Core AWS Resource Identifiers
-
-* **EC2 Instance ID:** `i-0bdb7a3460456e2dd` (Type: `t2.micro`)
-* **VPC ID:** `vpc-05db7ee8354012a47`
-* **Security Group ID:** `sg-0519789e5f7578848`
-* **SSH Key Name:** `terraform` (Required for authentication)
+| Layer | Resources Provisioned | Purpose |
+| :--- | :--- | :--- |
+| **Networking** | VPC, Public Subnet, Internet Gateway, Route Table | Isolated and managed network environment. |
+| **Security** | Security Group (`jenkins_sg`) | Firewall rules allowing inbound traffic on **Port 8080 (Jenkins)** and **Port 22 (SSH)**. |
+| **Compute** | EC2 Instance (Ubuntu), Elastic IP (EIP) | Hosts the Jenkins application and provides a stable public access URL. |
+| **Application** | Bash Script (`script.sh`) | Automates the installation of Java and the Jenkins service upon instance launch. |
 
 ---
 
-## 4. Deployment and Management
+## 3. Getting Started
 
 ### Prerequisites
 
-1.  AWS Account with configured CLI access.
-2.  Terraform CLI installed (Ensure version consistency via `terraform.lock.hcl`).
-3.  The SSH **Key Pair** named `terraform` must be available in the target region (`us-east-1`).
+1.  AWS Account with configured credentials (CLI profile).
+2.  Terraform CLI installed.
+3.  The required SSH **Key Pair** (named `terraform`) must exist in your AWS target region.
 
-### Deployment Steps (IaC Workflow)
+### Deployment Workflow (Execution)
 
-1.  **Initialize the backend:**
+1.  **Initialize the configuration:**
     ```bash
     terraform init
     ```
-2.  **Review the execution plan:**
+2.  **Review the planned changes:**
     ```bash
     terraform plan
     ```
-3.  **Apply the configuration:**
+3.  **Apply the infrastructure:**
     ```bash
     terraform apply --auto-approve
     ```
 
-### Post-Deployment: Initial Jenkins Login
+---
 
-1.  **Access:** Navigate to the **Public URL** above to start the Jenkins setup.
-2.  **Retrieve Password:** SSH into the instance to fetch the dynamically generated administrator password:
+## 4. Verification and Access
+
+Upon successful completion, the necessary access details are printed to the console via `outputs.tf`.
+
+### Key Outputs
+
+* **Jenkins Endpoint:** `http://[Jenkins Public IP]:8080` (e.g., `http://98.95.246.89:8080`)
+* **EC2 Instance ID:** `i-0bdb7a3460456e2dd`
+* **VPC ID:** `vpc-05db7ee8354012a47`
+* **SSH Key Name:** `terraform`
+
+### Initial Jenkins Login
+
+1.  **Connect via SSH** to the public IP using your private key:
     ```bash
-    # Connect to the instance
-    ssh -i /path/to/your/terraform.pem ubuntu@98.95.246.89
-    
-    # Retrieve the secret password
+    ssh -i /path/to/your/terraform.pem ubuntu@<Jenkins Public IP>
+    ```
+2.  **Retrieve the initial administrator password:**
+    ```bash
     sudo cat /var/lib/jenkins/secrets/initialAdminPassword
     ```
-3.  Use the password to unlock Jenkins in the browser.
+3.  Use this password in the browser to unlock the Jenkins console.
 
-### Teardown (Clean Up)
+---
 
-To safely destroy all provisioned AWS resources and prevent recurring charges, use the following command:
+## 5. Cleanup
+
+To destroy all AWS resources provisioned by this configuration and avoid further billing, execute:
 
 ```bash
 terraform destroy --auto-approve
