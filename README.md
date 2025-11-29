@@ -1,79 +1,81 @@
-Markdown# AWS Terraform Jenkins CI/CD Deployment
+# AWS Jenkins CI/CD Server Deployment (Infrastructure as Code)
 
-[![GitHub license](https://img.shields.io/github/license/Migo205/-aws-terraform-jenkins-ci)](https://github.com/Migo205/-aws-terraform-jenkins-ci/blob/main/LICENSE)
-[![Terraform Version](https://img.shields.io/badge/Terraform-%3E%3D1.0-blue.svg)](https://www.terraform.io/downloads.html)
-[![AWS Provider](https://img.shields.io/badge/AWS-Provider%205.0%2B-orange.svg)](https://registry.terraform.io/providers/hashicorp/aws/latest)
+## 1. Project Synopsis
 
-## Overview
+This repository contains the **Terraform** configuration files necessary to provision a resilient and secure **Jenkins Continuous Integration (CI) Server** on the **Amazon Web Services (AWS)** cloud platform. The architecture emphasizes high availability, secure networking, and automated application bootstrap, adhering strictly to Infrastructure as Code (IaC) best practices.
 
-This repository provides a complete **Infrastructure as Code (IaC)** solution using Terraform to deploy a **production-ready Jenkins CI/CD server** on AWS.
+## 2. Technical Stack
 
-The setup includes:
+| Component | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Cloud Platform** | AWS | Core cloud provider for all resources. |
+| **Provisioning** | Terraform (IaC) | Declaratively manages the entire AWS infrastructure lifecycle. |
+| **CI Application** | Jenkins | The Continuous Integration server deployed on the EC2 instance. |
+| **OS** | Ubuntu 22.04+ (via AMI) | Base operating system for the EC2 compute instance. |
+| **Configuration** | Bash Shell Scripting | Used via `user_data` for automated Jenkins and Java installation. |
 
-- Custom VPC with public and private subnets
-- Multi-AZ architecture (us-east-1a & us-east-1b)
-- NAT Gateways for outbound internet access from private resources
-- Auto-configured EC2 instance running Jenkins (installed via user data)
-- Secure networking with Internet Gateway, route tables, and least-privilege Security Groups
-- Free-tier eligible and highly cost-effective
+## 3. Deployed Infrastructure Architecture
 
-Perfect for DevOps learners, certification labs, interviews, or real team environments.
+The configuration creates a dedicated, isolated networking environment and secures the Jenkins server:
 
-## Architecture Summary
-Internet Gateway
-│
-Public Subnets (ALB / Bastion / NAT)
-│
-Private Subnets (Future app/DB tier)
-│
-NAT Gateway (per AZ) → Outbound internet
-text## Prerequisites
+* **VPC:** Custom Virtual Private Cloud for network isolation.
+* **Subnet:** Single Public Subnet to host the accessible server.
+* **Security Group:** Enforces a restrictive security posture, opening only essential ports.
+* **EC2 Instance:** Launches the Jenkins application host.
+* **Elastic IP (EIP):** Provides a static, persistent public address for the Jenkins endpoint.
 
-- AWS account (Free Tier works perfectly)
-- Terraform ≥ 1.0 installed
-- AWS CLI configured (optional but helpful)
-- Git
+## 4. Verification and Access Details
 
-## Quick Start
+The following parameters represent the live resources provisioned by the successful Terraform run:
+
+| Parameter | Value | Resource | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Jenkins Endpoint** | `http://98.95.246.89:8080` | `aws_eip` | Stable public URL for the Jenkins dashboard. |
+| **Instance Identifier** | `i-0bdb7a3460456e2dd` | `aws_instance` | Unique ID for referencing the compute instance in AWS Console/CLI. |
+| **Server Size** | `t2.micro` | `aws_instance` | Instance type utilized for deployment. |
+| **SSH Key Pair** | `terraform` | `aws_instance` | Required Key Pair name for secure SSH connections. |
+| **VPC Identifier** | `vpc-05db7ee8354012a47` | `aws_vpc` | Network boundary ID. |
+| **Security Group ID** | `sg-0519789e5f7578848` | `aws_security_group` | Firewall boundary enforcing port access rules. |
+
+## 5. Deployment and Operations
+
+### Prerequisites
+
+1.  AWS Account with configured credentials (CLI profile).
+2.  Terraform CLI installed.
+3.  Required **Key Pair** (`terraform`) must exist in the target AWS Region (`us-east-1`).
+
+### Deployment Steps
+
+1.  **Initialization:**
+    ```bash
+    terraform init
+    ```
+2.  **Validation & Planning:** Review the infrastructure changes before applying.
+    ```bash
+    terraform plan
+    ```
+3.  **Execution (Provisioning):**
+    ```bash
+    terraform apply --auto-approve
+    ```
+
+### Post-Deployment Verification (First Login)
+
+1.  **Access Web UI:** Navigate to the Jenkins Endpoint: `http://98.95.246.89:8080`
+2.  **Retrieve Initial Password:** The setup script automatically configures Jenkins. Retrieve the administrator password via SSH:
+    ```bash
+    # Connect using the Key Pair
+    ssh -i /path/to/your/terraform.pem ubuntu@98.95.246.89
+    
+    # Retrieve the password from the installation log
+    sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+    ```
+3.  Use the retrieved password in the browser to unlock Jenkins and complete the setup.
+
+### Teardown (Destruction)
+
+To ensure the environment is fully de-provisioned and to prevent recurring charges, execute the following command:
 
 ```bash
-git clone https://github.com/Migo205/-aws-terraform-jenkins-ci.git
-cd -aws-terraform-jenkins-ci
-
-terraform init
-terraform validate
-terraform plan
-terraform apply
-Deployment completes in ~5–10 minutes.
-Access Your Jenkins Server
-After apply, you will see:
-textOutputs:
-jenkins_url = "http://ec2-xx-xx-xx-xx.compute-1.amazonaws.com:8080"
-Open the URL → Unlock Jenkins → Get initial admin password from instance logs or SSM Session Manager.
-Cleanup (Important – Avoid Charges!)
-Bashterraform destroy
-Project Structure
-text├── main.tf           # Core resources (VPC, EC2, Jenkins, etc.)
-├── variables.tf      # Input variables
-├── terraform.tfvars  # Your custom values
-├── outputs.tf        # Useful outputs (Jenkins URL, IPs)
-├── provider.tf       # AWS provider configuration
-├── security.tf       # Security Groups and rules
-└── README.md         # This file
-Future Enhancements (Ready to Add)
-
-Application Load Balancer in front of Jenkins
-Auto Scaling Group for Jenkins agents
-Multi-AZ RDS database
-Remote S3 backend + DynamoDB locking
-HTTPS with ACM certificate
-
-Contributing
-Contributions, issues, and feature requests are welcome!
-Feel free to fork and submit pull requests.
-License
-This project is licensed under the MIT License – see the LICENSE file for details.
-
-Built with passion for clean, repeatable, and professional DevOps practices.
-Last updated: November 2025
-If this helped you in your lab, certification, or job interview — don’t forget to star the repo!
+terraform destroy --auto-approve
