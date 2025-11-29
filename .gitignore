@@ -1,0 +1,14 @@
+.terraform/          
+*.tfstate             
+*.tfstate.backup     
+crash.log             
+
+*.tfvars              
+.terraformrc         
+*.pem                 
+*.key                
+
+
+.DS_Store             
+.idea/                
+
